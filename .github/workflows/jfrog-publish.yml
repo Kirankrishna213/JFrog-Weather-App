@@ -29,7 +29,7 @@ jobs:
 
       - name: Upload to Artifactory with build tracking
         run: |
-          jf rt u "weather-app.zip" "generic-local/krishna/weather-app/" --build-name=weather-app --build-number=${{ github.run_number }} --properties="commit=${{ github.sha }};branch=${{ github.ref_name }};build-id=${{ github.run_number }}"
+          jf rt u weather-app.zip generic-local/krishna/weather-app/ --build-name=weather-app --build-number=${{ github.run_number }} --properties="commit=${{ github.sha }};branch=${{ github.ref_name }};build-id=${{ github.run_number }}"
 
       - name: Add Git metadata
         run: |
