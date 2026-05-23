@@ -15,14 +15,18 @@ jobs:
       - name: Setup JFrog CLI
         uses: jfrog/setup-jfrog-cli@v4
         env:
-          JF_URL: ${{ secrets.JF_URL }}
-          JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
+          JF_URL: https://trialcej2k9.jfrog.io
+          JF_USER: kiran.krishna@aptean.com
+          JF_PASSWORD: JFrog@1234
 
-      - name: Build ZIP
-        run: zip -r weather-app.zip . -x ".git/*" ".github/*"
+      - name: Build weather-app artifact (ZIP)
+        run: |
+          zip -r weather-app.zip . -x ".git/*" ".github/*"
 
-      - name: Upload to Artifactory
-        run: jf rt u "weather-app.zip" "generic-local/krishna/weather-app/" --build-name=weather-app --build-number=${{ github.run_number }}
+      - name: Upload to Artifactory (krishna folder)
+        run: |
+          jf rt u "weather-app.zip" "generic-local/krishna/weather-app/" --build-name=weather-app --build-number=${{ github.run_number }}
 
-      - name: Publish Build Info
-        run: jf rt build-publish weather-app ${{ github.run_number }}
+      - name: Publish build info
+        run: |
+          jf rt build-publish weather-app ${{ github.run_number }}
