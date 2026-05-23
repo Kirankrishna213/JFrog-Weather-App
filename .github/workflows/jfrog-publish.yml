@@ -29,12 +29,9 @@ jobs:
 
       - name: Upload to Artifactory with build tracking
         run: |
-          jf rt u "weather-app.zip" "generic-local/krishna/weather-app/" \
-            --build-name=weather-app \
-            --build-number=${{ github.run_number }} \
-            --properties="commit=${{ github.sha }};branch=${{ github.ref_name }};build-id=${{ github.run_number }}"
+          jf rt u "weather-app.zip" "generic-local/krishna/weather-app/" --build-name=weather-app --build-number=${{ github.run_number }} --properties="commit=${{ github.sha }};branch=${{ github.ref_name }};build-id=${{ github.run_number }}"
 
-      - name: Add Git metadata (commit, branch, remote URL)
+      - name: Add Git metadata
         run: |
           jf rt build-add-git weather-app ${{ github.run_number }}
 
@@ -42,10 +39,6 @@ jobs:
         run: |
           jf rt build-add-env weather-app ${{ github.run_number }}
 
-      - name: Publish build info to Artifactory
+      - name: Publish build info
         run: |
           jf rt build-publish weather-app ${{ github.run_number }}
-
-      - name: Scan with Xray (optional)
-        run: |
-          jf rt build-scan weather-app ${{ github.run_number }} || true
