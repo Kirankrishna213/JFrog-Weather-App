@@ -3,6 +3,8 @@ name: Publish to JFrog Artifactory
 on:
   push:
     branches: [ main ]
+  pull_request:
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
@@ -11,6 +13,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetches all history for proper Git metadata
 
       - name: Setup JFrog CLI
         uses: jfrog/setup-jfrog-cli@v4
@@ -19,14 +23,44 @@ jobs:
           JF_USER: kiran.krishna@aptean.com
           JF_PASSWORD: JFrog@1234
 
+      - name: Configure Git metadata collection
+        run: |
+          git config --global user.email "ci@weather-app.com"
+          git config --global user.name "CI Pipeline"
+
       - name: Build weather-app artifact (ZIP)
         run: |
-          zip -r weather-app.zip . -x ".git/*" ".github/*"
+          zip -r weather-app.zip . -x ".git/*" ".github/*" "*.zip"
+
+      - name: Start build tracking
+        run: |
+          jf rt build-start weather-app ${{ github.run_number }}
 
       - name: Upload to Artifactory (krishna folder)
         run: |
-          jf rt u "weather-app.zip" "generic-local/krishna/weather-app/" --build-name=weather-app --build-number=${{ github.run_number }}
+          jf rt u "weather-app.zip" "generic-local/krishna/weather-app/" \
+            --build-name=weather-app \
+            --build-number=${{ github.run_number }} \
+            --properties="commit=${{ github.sha }};branch=${{ github.ref_name }};build-id=${{ github.run_number }};deployed-by=kiran.krishna@aptean.com"
 
-      - name: Publish build info
+      - name: Collect Git metadata (commit, branch, remote URL)
+        run: |
+          jf rt build-add-git weather-app ${{ github.run_number }}
+
+      - name: Collect environment variables
+        run: |
+          jf rt build-collect-env weather-app ${{ github.run_number }}
+
+      - name: Collect dependencies from requirements.txt
+        run: |
+          if [ -f requirements.txt ]; then
+            jf rt build-add-deps weather-app ${{ github.run_number }} requirements.txt
+          fi
+
+      - name: Publish build info to Artifactory
         run: |
           jf rt build-publish weather-app ${{ github.run_number }}
+
+      - name: Scan with Xray (optional)
+        run: |
+          jf rt build-scan weather-app ${{ github.run_number }} || true
