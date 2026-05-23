@@ -3,8 +3,6 @@ name: Publish to JFrog Artifactory
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
   workflow_dispatch:
 
 jobs:
@@ -13,32 +11,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup JFrog CLI
-        uses: jfrog/setup-jfrog-cli@v4
-        env:
-          JF_URL: https://trialcej2k9.jfrog.io
-          JF_USER: kiran.krishna@aptean.com
-          JF_PASSWORD: JFrog@1234
 
       - name: Build weather-app artifact (ZIP)
         run: |
           zip -r weather-app.zip . -x ".git/*" ".github/*" "*.zip"
 
-      - name: Upload to Artifactory with build tracking
+      - name: Upload to Artifactory (krishna folder) using curl
         run: |
-          jf rt u weather-app.zip generic-local/krishna/weather-app/ --build-name=weather-app --build-number=${{ github.run_number }} --properties="commit=${{ github.sha }};branch=${{ github.ref_name }};build-id=${{ github.run_number }}"
-
-      - name: Add Git metadata
-        run: |
-          jf rt build-add-git weather-app ${{ github.run_number }}
-
-      - name: Add environment variables
-        run: |
-          jf rt build-add-env weather-app ${{ github.run_number }}
-
-      - name: Publish build info
-        run: |
-          jf rt build-publish weather-app ${{ github.run_number }}
+          curl -u kiran.krishna@aptean.com:JFrog@1234 -T weather-app.zip "https://trialcej2k9.jfrog.io/artifactory/generic-local/krishna/weather-app/weather-app.zip"
