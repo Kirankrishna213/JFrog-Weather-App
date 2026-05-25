@@ -1,0 +1,44 @@
+name: CI/CD Pipeline with JFrog
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js (for npm)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      # 🚀 KEY SPEUP: Download npm dependencies FROM JFROG CACHE
+      - name: Install dependencies from JFrog (FAST - uses cached packages)
+        run: |
+          npm config set registry https://trialcej2k9.jfrog.io/artifactory/api/npm/single-url-for-all/
+          npm install
+        # First time: downloads from npmjs.org (slow) and caches in JFrog
+        # Next time: downloads from JFrog cache (very fast - 10x speedup)
+
+      - name: Build application
+        run: |
+          npm run build  # or python build command
+          zip -r weather-app.zip . -x ".git/*" ".github/*" "*.zip"
+
+      # Upload to JFrog (store the built artifact)
+      - name: Upload artifact to JFrog
+        run: |
+          curl -u kiran.krishna@aptean.com:JFrog@1234 -T weather-app.zip \
+            "https://trialcej2k9.jfrog.io/artifactory/generic-local/krishna/weather-app/weather-app-${{ github.run_number }}.zip"
+
+      # 🚀 NEXT TIME YOU DEPLOY: Download the artifact FROM JFrog (no rebuild needed)
+      - name: Download artifact from JFrog for deployment
+        run: |
+          curl -u kiran.krishna@aptean.com:JFrog@1234 -O \
+            "https://trialcej2k9.jfrog.io/artifactory/generic-local/krishna/weather-app/weather-app-${{ github.run_number }}.zip"
+          unzip weather-app-${{ github.run_number }}.zip -d ./deploy
